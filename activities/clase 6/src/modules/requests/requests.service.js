@@ -9,13 +9,15 @@ import {
   findById,
   insertRequest,
   updateRequest,
-  insertHistoryEvent
+  insertHistoryEvent,
+  findHistory
 } from './requests.store.js';
-import { mapRequestRow } from './request.mapper.js';
+import { mapRequestRow, mapHistoryEventRow } from './request.mapper.js';
 import { STATUSES, isValidStatus, isTerminal, canTransition } from './request-status.js';
 import {
   canListAllRequests,
   canViewRequest,
+  canViewHistory,
   canCreateRequest,
   canEditContent,
   canChangePriority,
@@ -73,10 +75,6 @@ export async function listRequests(actor, filters) {
     : { ...filters, createdBy: actor.userId };
 
   const rows = await findAll(scope);
-  if (rows.length === 0) {
-    // Nothing matched the given filters.
-    throw new AppError('resource', 'REQUEST_NOT_FOUND', 'No requests matched the given filters.');
-  }
   return rows.map(mapRequestRow);
 }
 
@@ -211,4 +209,15 @@ export async function patchRequest(actor, id, body) {
   });
 
   return mapRequestRow(row);
+}
+
+export async function getHistory(actor, id) {
+  const row = await findById(id);
+  if (!row) throw notFound(id);
+
+  const request = mapRequestRow(row);
+  if (!canViewHistory(actor, request)) throw notFound(id);
+
+  const events = await findHistory(id);
+  return events.map(mapHistoryEventRow);
 }

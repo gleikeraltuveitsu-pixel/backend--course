@@ -9,7 +9,8 @@ import {
   listRequests,
   getRequest,
   createRequest,
-  patchRequest
+  patchRequest,
+  getHistory
 } from './requests.service.js';
 import { respondError } from '../../http/respond-error.js';
 
@@ -19,6 +20,14 @@ router.get('/', async (req, res) => {
   try {
     const { status, priority } = req.query;
     res.status(200).json(await listRequests(req.auth, { status, priority }));
+  } catch (error) {
+    respondError(res, error);
+  }
+});
+
+router.get('/:id/history', async (req, res) => {
+  try {
+    res.status(200).json(await getHistory(req.auth, Number(req.params.id)));
   } catch (error) {
     respondError(res, error);
   }
